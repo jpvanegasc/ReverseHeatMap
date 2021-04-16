@@ -28,7 +28,7 @@ while (x < x_max):
 
 os.remove('results.csv')
 file = open('results.csv','w+')
-file.write("x,y,r,g,b,rgbtotal\r\n")
+#file.write("x,y,r,g,b,rgbtotal\r\n")
 result = []
 
 pattern = re.compile(r"\D")
@@ -46,9 +46,17 @@ for each in lis:
 
 result = sorted(result)
 
+x_temp = 0
 for each in result:
     total = int(each[2]) + int(each[3]) + int(each[4])
     string = str(each[0]) + ',' + str(each[1]) + ',' + str(total) + '\n'
 
-    file.write(writeme)
+    file.write(string)
+
+    if each[0] == x_temp:
+        file.write(string)
+    else:
+        file.write('\n')
+        file.write(string)
+        x_temp = each[0]
 
