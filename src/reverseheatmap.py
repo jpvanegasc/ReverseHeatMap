@@ -26,7 +26,11 @@ while (x < x_max):
     x += 1
     y = 0
 
-os.remove('results.csv')
+try:
+    os.remove('results.csv')
+except:
+    pass
+
 file = open('results.csv','w+')
 #file.write("x,y,r,g,b,rgbtotal\r\n")
 result = []
@@ -46,12 +50,17 @@ for each in lis:
 
 result = sorted(result)
 
+import numpy as np
+
+heat = np.zeros((x_max, y_max))
+
 x_temp = 0
 for each in result:
     total = int(each[2]) + int(each[3]) + int(each[4])
     string = str(each[0]) + ',' + str(each[1]) + ',' + str(total) + '\n'
 
     file.write(string)
+    heat[int(each[0]), int(each[1])] = total
 
     if each[0] == x_temp:
         file.write(string)
@@ -60,3 +69,15 @@ for each in result:
         file.write(string)
         x_temp = each[0]
 
+file.close()
+
+import matplotlib.pyplot as pl
+
+pl.imshow(heat, cmap='hot', interpolation='nearest')
+pl.savefig("branches.png")
+
+with open("branches_reversed.csv", 'w+') as f:
+    for x in range(x_max):
+        for y in range(y_max):
+            f.write(str(heat[x][y]) + ',')
+        f.write('\n')
