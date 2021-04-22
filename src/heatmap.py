@@ -3,81 +3,85 @@
 import os
 import re
 
+import numpy as np
 from PIL import Image
 
-# open the image and determine size.
-im = Image.open("heatmap.png")
+def reverse(filename:str, save="full"):
+    """
+    Reverse a heatmap
 
-size = im.size
-x_max = size[0]
-y_max = size[1]
+    @param filename: png heatmap to reverse
+    @param save: Determines way of saving. 'full' saves to matrix. 'cols' saves as (x,y,rgb) pairs
+    """
+    im = Image.open(filename)
 
-print(f"Image is {x_max} by {y_max} pixels")
+    size = im.size
+    x_max = size[0]
+    y_max = size[1]
 
-lis = []
-x = 0
-y = 0
+    print(f"Image is {x_max} by {y_max} pixels")
 
-while (x < x_max):
-    while (y < y_max):
-        lis.append([x, y, im.getpixel((x,y))])
-        y += 1
-
-    x += 1
+    pixels = []
+    x = 0
     y = 0
 
-try:
-    os.remove('results.csv')
-except:
-    pass
+    while (x < x_max):
+        while (y < y_max):
+            pixels.append([x, y, im.getpixel((x,y))])
+            y += 1
 
-file = open('results.csv','w+')
-#file.write("x,y,r,g,b,rgbtotal\r\n")
-result = []
+        x += 1
+        y = 0
 
-pattern = re.compile(r"\D")
+    rev = []
 
-for each in lis:
-    x = each[0]
-    y = each[1]
-    rgb = str(each[2]).split(",")
+    pattern = re.compile(r"\D")
 
-    r = pattern.sub('', rgb[0])
-    g = pattern.sub('', rgb[1])
-    b = pattern.sub('', rgb[2])
+    for each in pixels:
+        x = each[0]
+        y = each[1]
+        rgb = str(each[2]).split(",")
 
-    result.append([x,y,r,g,b])
+        r = pattern.sub('', rgb[0])
+        g = pattern.sub('', rgb[1])
+        b = pattern.sub('', rgb[2])
 
-result = sorted(result)
+        rev.append([x,y,r,g,b])
 
-import numpy as np
+    rev = sorted(rev)
 
-heat = np.zeros((x_max, y_max))
+    filename_clean = filename.replace('.png', '')
 
-x_temp = 0
-for each in result:
-    total = int(each[2]) + int(each[3]) + int(each[4])
-    string = str(each[0]) + ',' + str(each[1]) + ',' + str(total) + '\n'
-
-    file.write(string)
-    heat[int(each[0]), int(each[1])] = total
-
-    if each[0] == x_temp:
-        file.write(string)
+    if save == "full":
+        heat = np.zeros((x_max, y_max))
+    elif save == "cols":
+        file = open(f"{filename_clean}_reversed.csv",'w+')
+        file.write("x,y,rgb_total\r\n")
     else:
-        file.write('\n')
-        file.write(string)
-        x_temp = each[0]
+        raise ValueError("Invalid save arg.")
 
-file.close()
+    x_temp = 0
+    for each in rev:
+        total = int(each[2]) + int(each[3]) + int(each[4])
+        string = str(each[0]) + ',' + str(each[1]) + ',' + str(total) + '\n'
 
-import matplotlib.pyplot as pl
+        if save == "full":
+            heat[each[0], each[1]] = total
+        elif save == "cols":
+            file.write(string)
 
-pl.imshow(heat, cmap='hot', interpolation='nearest')
-pl.savefig("branches.png")
+            if each[0] == x_temp:
+                file.write(string)
+            else:
+                file.write('\n')
+                file.write(string)
+                x_temp = each[0]
 
-with open("branches_reversed.csv", 'w+') as f:
-    for x in range(x_max):
-        for y in range(y_max):
-            f.write(str(heat[x][y]) + ',')
-        f.write('\n')
+    if save == "full":
+        with open(f"{filename_clean}_reversed.csv", 'w+') as f:
+            for x in range(x_max):
+                for y in range(y_max):
+                    f.write(str(heat[x][y]) + ',')
+                f.write('\n')
+    elif save == "cols":
+        file.close()
